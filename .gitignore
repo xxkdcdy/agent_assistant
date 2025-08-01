@@ -4,6 +4,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### 隐私项目
+src/main/java/com/ddlwlrma/ddlwlrmaaiagent/demo/invoke/TestApiKey.java
+src/main/resources/application-local.yml
+
 ### STS ###
 .apt_generated
 .classpath
