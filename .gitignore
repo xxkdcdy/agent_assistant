@@ -7,6 +7,7 @@ target/
 ### 隐私项目
 src/main/java/com/ddlwlrma/ddlwlrmaaiagent/demo/invoke/TestApiKey.java
 src/main/resources/application-local.yml
+tmp
 
 ### STS ###
 .apt_generated
