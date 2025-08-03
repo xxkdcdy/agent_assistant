@@ -21,8 +21,15 @@ Java21
 | spring-ai-openai-spring-boot-starter                                                                       | 1.0.0-M6    | Spring AI OpenAI接入   |
 | jsonschema-generator                                                                                       | 4.37.0      | JSON格式生成             |
 | [kryo](https://github.com/EsotericSoftware/kryo)                                                           | 5.6.2       | 序列化库                 |
+| spring-ai-markdown-document-reader                                                                         | 1.0.0-M6    | Markdown文件读取         |
 
 ### 开发日志
+
+2025年8月3日
+1. 基于Spring AI实现RAG流程
+   - 使用DocumentReader读取资源文件，加载一个Embedding模型，切分、向量化后存入VectorStore
+   - 使用Q&A拦截器，向量化后对chunk打分，得分高的放进提示词里
+   - 最终实现了基于两种方式（本地文件/百炼云端知识库服务）的RAG流程
 
 2025年8月2日
 1. 支持多轮对话记忆功能，并且可以区分不同的对话ID，自定义实现文件持久化ChatMemory

@@ -9,11 +9,18 @@ spring:
           model: qwen-plus
     openai:
       api-key: xxxxxx
-      base-url: https://api-inference.modelscope.cn
+      base-url: xxxxxx
       chat:
         options:
+          api-key: xxxxxx
+          base-url: https://api-inference.modelscope.cn
           model: Qwen/Qwen2.5-72B-Instruct
           stream: false
+      embedding:
+        api-key: xxxxxx
+        base-url: https://api.siliconflow.cn
+        options:
+          model: BAAI/bge-large-zh-v1.5
   profiles:
     active: local
 server:
