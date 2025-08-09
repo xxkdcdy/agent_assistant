@@ -49,4 +49,13 @@ class LoveAppTest {
         String answer = loveApp.doChatWithRag(message, chatId);
         Assertions.assertNotNull(answer);
     }
+
+    @Test
+    void doChatWithTools() {
+        String chatId = UUID.randomUUID().toString();
+        // 第一轮
+        String message = "查询网络，告诉我今天是几月几号，苏州天气怎么样";
+        String answer = loveApp.doChatWithTools(message, chatId);
+        Assertions.assertNotNull(answer);
+    }
 }

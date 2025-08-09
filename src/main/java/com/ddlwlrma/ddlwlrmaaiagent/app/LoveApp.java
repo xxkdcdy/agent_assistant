@@ -4,6 +4,9 @@ import com.ddlwlrma.ddlwlrmaaiagent.advisor.MyLoggerAdvisor;
 import com.ddlwlrma.ddlwlrmaaiagent.advisor.MyReReadingAdvisor;
 import com.ddlwlrma.ddlwlrmaaiagent.chatmemory.FileBasedChatMemory;
 import com.ddlwlrma.ddlwlrmaaiagent.rag.LoveAppRagCloudAdvisorConfig;
+import com.ddlwlrma.ddlwlrmaaiagent.rag.LoveAppRagCustomAdvisorFactory;
+import com.ddlwlrma.ddlwlrmaaiagent.rag.PgVectorVectorStoreConfig;
+import com.ddlwlrma.ddlwlrmaaiagent.rag.QueryRewriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -14,6 +17,7 @@ import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -37,6 +41,12 @@ public class LoveApp {
     // 百炼知识库RAG
 //    @jakarta.annotation.Resource
 //    private Advisor loveAppRagCloudAdvisor;
+    @jakarta.annotation.Resource
+    private VectorStore pgVectorVectorStore;
+    @jakarta.annotation.Resource
+    private QueryRewriter queryRewriter;
+    @jakarta.annotation.Resource
+    private ToolCallback[] allTools;
 
     /**
      * 初始化AI客户端
@@ -115,14 +125,42 @@ public class LoveApp {
     }
 
     public String doChatWithRag(String message, String chatId) {
+        // query改写
+        String rewrittenQuery = queryRewriter.doQueryRewrite(message);
+        ChatResponse chatResponse = chatClient.prompt()
+                .user(rewrittenQuery)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                // 基于内存的RAG
+                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))
+                // 基于百炼知识库的RAG
+//                .advisors(loveAppRagCloudAdvisor)
+                // 基于pgVector的RAG
+//                .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
+//                .advisors(
+//                        LoveAppRagCustomAdvisorFactory.createLoveAppRagCustomAdvisor
+//                                (pgVectorVectorStore, "恋爱常见问题和回答 - 已婚篇.md"))
+                .call()
+                .chatResponse();
+
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("content: {}", content);
+        return content;
+    }
+
+    /**
+     * 支持工具调用
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public String doChatWithTools(String message, String chatId) {
         ChatResponse chatResponse = chatClient.prompt()
                 .user(message)
                 .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
                         .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
-                // 基于本地知识库的RAG
-                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))
-                // 基于百炼知识库的RAG
-//                .advisors(loveAppRagCloudAdvisor)
+                .advisors(new MyLoggerAdvisor())
+                .tools(allTools)
                 .call()
                 .chatResponse();
 

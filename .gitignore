@@ -8,6 +8,7 @@ target/
 src/main/java/com/ddlwlrma/ddlwlrmaaiagent/demo/invoke/TestApiKey.java
 src/main/resources/application-local.yml
 tmp
+src/main/resources/document
 
 ### STS ###
 .apt_generated

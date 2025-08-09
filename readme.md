@@ -22,8 +22,37 @@ Java21
 | jsonschema-generator                                                                                       | 4.37.0      | JSON格式生成             |
 | [kryo](https://github.com/EsotericSoftware/kryo)                                                           | 5.6.2       | 序列化库                 |
 | spring-ai-markdown-document-reader                                                                         | 1.0.0-M6    | Markdown文件读取         |
+| spring-boot-starter-jdbc                                                                                   | -           | Spring JDBC依赖        |
+| postgresql                                                                                                 | runtime     | postgreSQL依赖         |
+| spring-ai-pgvector-store                                                                                   | 1.0.0-M6    | PGvector向量库扩展依赖      |
+| [jsoup](https://jsoup.org/)                                                                                | 1.19.1      | HTML解析库              |
+| [itext-core](https://itextpdf.com/)                                                                        | 9.1.0       | PDF生成核心库             |
+| [font-asian](https://itextpdf.com/)                                                                        | 9.1.0       | PDF亚洲字体支持            |
+| [okhttp](https://square.github.io/okhttp/)                                                                 | 4.12.0      | HTTP客户端库             |
+
 
 ### 开发日志
+
+2025年8月9日
+1. 打通LLM工具调用，使用统一注册器进行工具注册，工具正在开发中
+   - [x] 文件处理工具
+   - [x] 网页抓取工具
+   - [x] 联网搜索工具
+   - [ ] 终端操作工具
+   - [ ] 资源下载工具
+   - [ ] PDF生成工具
+   - [ ] 邮箱信息获取工具
+
+2025年8月7日
+1. 实现基于AI的文档元信息增强器
+2. 实现基于AI的查询重写器
+3. 实现自定义RAG检索增强顾问
+
+2025年8月4日
+1. 基于PostgreSQL.pgvector实现云端向量库的检索
+   - 在服务器上安装并配置PostgreSQL，创建agentdb数据库
+   - 为数据库安装pgvector、hstore插件
+   - 手动配置VectorStore，Spring AI会自动在数据库中建表
 
 2025年8月3日
 1. 基于Spring AI实现RAG流程
