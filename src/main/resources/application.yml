@@ -25,6 +25,14 @@ spring:
         base-url: https://api.siliconflow.cn
         options:
           model: BAAI/bge-large-zh-v1.5
+    mcp:
+      client:
+#        sse:
+#          connections:
+#            server1:
+#              url: http://localhost:8127
+         stdio:
+         servers-configuration: classpath:mcp-servers.json
 #    vectorstore:
 #      pgvector:
 #        index-type: HNSW
@@ -56,3 +64,6 @@ knife4j:
     language: zh_cn
 search-api:
   api-key: xxxxxx
+mail:
+  username: "你的163邮箱@163.com"
+  auth-code: "你的授权码"

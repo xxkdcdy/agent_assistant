@@ -54,8 +54,20 @@ class LoveAppTest {
     void doChatWithTools() {
         String chatId = UUID.randomUUID().toString();
         // 第一轮
-        String message = "查询网络，告诉我今天是几月几号，苏州天气怎么样";
+//        String message = "查询网络，告诉我今天是几月几号，苏州天气怎么样";
+//        String message = "帮我下载一张海绵宝宝的图片";
+//        String message = "帮我生成一个姑苏区吃货一日游时间安排PDF";
+        String message = "帮我看看我的163邮箱未读邮件";
         String answer = loveApp.doChatWithTools(message, chatId);
+        Assertions.assertNotNull(answer);
+    }
+
+    @Test
+    void doChatWithMcp() {
+        String chatId = UUID.randomUUID().toString();
+//        String message = "帮我看看苏州市姑苏区这一周的天气怎么样";
+        String message = "帮我搜一些有关足球的图片";
+        String answer = loveApp.doChatWithMcp(message, chatId);
         Assertions.assertNotNull(answer);
     }
 }
