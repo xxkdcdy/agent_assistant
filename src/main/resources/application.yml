@@ -1,11 +1,11 @@
 spring:
   application:
     name: ddlwlrma-ai-agent
-  ai:
     datasource:
       url: jdbc:postgresql://IP:5432/agentdb
       username: postgres
       password: xxxxxx
+  ai:
     dashscope:
       api-key: xxxxxx
       chat:
@@ -27,18 +27,19 @@ spring:
           model: BAAI/bge-large-zh-v1.5
     mcp:
       client:
-#        sse:
-#          connections:
-#            server1:
-#              url: http://localhost:8127
-         stdio:
-         servers-configuration: classpath:mcp-servers.json
-#    vectorstore:
-#      pgvector:
-#        index-type: HNSW
-#        dimensions: 1024
-#        distance-type: COSINE_DISTANCE
-#        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+        #        sse:
+        #          connections:
+        #            server1:
+        #              url: http://localhost:8127
+
+  #    vectorstore:
+  #      pgvector:
+  #        index-type: HNSW
+  #        dimensions: 1024
+  #        distance-type: COSINE_DISTANCE
+  #        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
   profiles:
     active: local
 server:

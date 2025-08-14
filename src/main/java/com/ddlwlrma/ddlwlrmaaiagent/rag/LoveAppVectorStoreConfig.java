@@ -12,20 +12,20 @@ import java.util.List;
 
 @Configuration
 public class LoveAppVectorStoreConfig {
-    @Resource
-    private LoveAppDocumentLoader loveAppDocumentLoader;
-
-    @Resource
-    private MyKeywordEnricher myKeywordEnricher;
-
-    @Bean
-    VectorStore loveAppVectorStore(EmbeddingModel openAiEmbeddingModel) {
-        SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(openAiEmbeddingModel).build();
-        List<Document> documentList = loveAppDocumentLoader.loadMarkdowns();
-
-        List<Document> enrichDocuments = myKeywordEnricher.enrichDocument(documentList);
-
-        simpleVectorStore.add(enrichDocuments);
-        return simpleVectorStore;
-    }
+//    @Resource
+//    private LoveAppDocumentLoader loveAppDocumentLoader;
+//
+//    @Resource
+//    private MyKeywordEnricher myKeywordEnricher;
+//
+//    @Bean
+//    VectorStore loveAppVectorStore(EmbeddingModel openAiEmbeddingModel) {
+//        SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(openAiEmbeddingModel).build();
+//        List<Document> documentList = loveAppDocumentLoader.loadMarkdowns();
+//
+//        List<Document> enrichDocuments = myKeywordEnricher.enrichDocument(documentList);
+//
+//        simpleVectorStore.add(enrichDocuments);
+//        return simpleVectorStore;
+//    }
 }

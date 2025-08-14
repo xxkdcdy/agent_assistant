@@ -32,6 +32,7 @@ public class ToolRegistration {
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
         MailUnreadSummaryTool mailUnreadSummaryTool = new MailUnreadSummaryTool(new MailService163(), username, authCode);
+        TerminateTool terminateTool = new TerminateTool();
 
         return ToolCallbacks.from(
                 fileOperationTool,
@@ -40,7 +41,8 @@ public class ToolRegistration {
                 resourceDownloadTool,
                 pdfGenerationTool,
                 terminalOperationTool,
-                mailUnreadSummaryTool
+                mailUnreadSummaryTool,
+                terminateTool
         );
     }
 }

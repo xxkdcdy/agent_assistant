@@ -36,6 +36,19 @@ Java21
 
 ### 开发日志
 
+2025年8月14日
+1. 完成AI服务化接口开发
+   - doChatWithLoveAppSync：同步方式调用Love App
+   - doChatWithLoveAppSSE：SSE方式调用Love App
+   - doChatWithManus：SSE方式调用超级智能体
+
+2025年8月13日
+1. 基于[OpenManus](https://github.com/FoundationAgents/OpenManus)的思路实现了一个ReAct的智能体
+   - BaseAgent：控制智能体的整体运行步骤，定义了智能体的状态，以及ReAct包含的think、act两个动作
+   - ReActAgent：实现了step，即think和act两个操作的具体执行步骤
+   - ToolCallAgent：实现了think的思考（调用什么工具），act的执行（执行工具，维护消息列表）
+   - DdlwlrmaAgent：初始化参数和提示词，生成具体的外部调用接口
+
 2025年8月12日
 1. 实现了图片搜索MCP Server的开发
    - 服务端stdio部署就是打成jar包，在client直接配置jar包的运行方式
