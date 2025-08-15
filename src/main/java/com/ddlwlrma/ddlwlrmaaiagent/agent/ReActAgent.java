@@ -1,5 +1,6 @@
 package com.ddlwlrma.ddlwlrmaaiagent.agent;
 
+import com.ddlwlrma.ddlwlrmaaiagent.agent.model.AgentState;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -34,7 +35,8 @@ public abstract class ReActAgent extends BaseAgent {
     public String step() {  
         try {  
             boolean shouldAct = think();  
-            if (!shouldAct) {  
+            if (!shouldAct) {
+                setState(AgentState.FINISHED);
                 return "思考完成 - 无需行动";  
             }  
             return act();  

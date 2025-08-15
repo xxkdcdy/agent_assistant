@@ -41,6 +41,7 @@ Java21
    - doChatWithLoveAppSync：同步方式调用Love App
    - doChatWithLoveAppSSE：SSE方式调用Love App
    - doChatWithManus：SSE方式调用超级智能体
+2. 后端支持跨域
 
 2025年8月13日
 1. 基于[OpenManus](https://github.com/FoundationAgents/OpenManus)的思路实现了一个ReAct的智能体
