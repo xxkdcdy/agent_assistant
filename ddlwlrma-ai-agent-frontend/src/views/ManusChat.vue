@@ -2,9 +2,11 @@
   <div class="chat-container">
     <div class="chat-header">
       <button class="back-btn" @click="goBack">← 返回</button>
-      <h2>"世另我"AI 超级智能体 🤖</h2>
-      <div class="status-indicator" :class="{ connected: isConnected }">
-        {{ isConnected ? '已连接' : '未连接' }}
+      <div class="header-right">
+        <h2>"世另我"AI 智能体 🤖</h2>
+        <div class="status-indicator" :class="{ connected: isConnected }">
+          {{ isConnected ? '已连接' : '未连接' }}
+        </div>
       </div>
     </div>
     
@@ -16,6 +18,12 @@
         'tool-message': message.isTool,
         'completion-message': message.isCompletion
       }]">
+        <div class="message-avatar" v-if="message.type === 'ai'">
+          <div class="avatar ai-avatar">🤖</div>
+        </div>
+        <div class="message-avatar" v-if="message.type === 'user'">
+          <div class="avatar user-avatar">👤</div>
+        </div>
         <div class="message-bubble" :class="{ 
           'step-bubble': message.isStep, 
           'thinking-bubble': message.isThinking,
@@ -30,7 +38,7 @@
       
       <div v-if="isLoading" class="message ai">
         <div class="message-bubble">
-          <div class="loading">AI超级智能体正在分析处理中...</div>
+          <div class="loading">AI智能体正在分析处理中...</div>
         </div>
       </div>
     </div>
@@ -40,7 +48,7 @@
         <input 
           v-model="inputMessage" 
           @keypress.enter="sendMessage"
-          placeholder="请输入您的问题，AI超级智能体将为您提供全方位的智能服务..."
+          placeholder="请输入您的问题，AI智能体将为您提供全方位的智能服务..."
           :disabled="isLoading"
         />
         <button 
@@ -88,7 +96,7 @@ export default {
       this.messages.push({
         id: Date.now(),
         type: 'ai',
-        content: '你好！我是"世另我"AI超级智能体🤖 我拥有强大的多模态能力，可以为您提供：\n\n• 📝 文本创作与编辑\n• 🔍 信息查询与分析\n• 💡 问题解决方案\n• 🎯 专业建议与指导\n• 🌐 多领域知识支持\n\n请告诉我您需要什么帮助！',
+        content: '你好！我是"世另我"AI智能体🤖 我拥有强大的多模态能力，可以为您提供：\n\n• 📝 文本创作与编辑\n• 🔍 信息查询与分析\n• 💡 问题解决方案\n• 🎯 专业建议与指导\n• 🌐 多领域知识支持\n\n请告诉我您需要什么帮助！',
         timestamp: new Date()
       })
     },
@@ -438,7 +446,7 @@ export default {
       }
       
       // 如果已经有AI回复内容，说明连接是正常的，这只是正常的流结束
-      if (this.stepMessages.length > 0) {
+      if (this.stepMessages.length > 0 || this.currentAIMessage.length > 0) {
         console.log('检测到AI已有回复内容，忽略连接关闭错误')
         this.isLoading = false
         this.isConnected = false
@@ -456,7 +464,7 @@ export default {
       
       // 添加详细错误消息
       let errorMessage = '抱歉，无法连接到AI智能体服务。'
-      errorMessage += '\n\n可能的原因：\n• 后端服务未启动（需要运行在 localhost:8123）\n• 网络连接问题\n• 服务器暂时不可用\n\n请确保后端服务正常运行后重试。'
+      errorMessage += '\n\n可能的原因：\n• 后端服务未启动\n• 网络连接问题\n• 服务器暂时不可用\n\n请确保后端服务正常运行后重试。'
       
       this.messages.push({
         id: Date.now(),
@@ -499,6 +507,82 @@ export default {
 </script>
 
 <style scoped>
+/* 全屏样式覆盖 */
+.chat-container {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 头像样式 */
+.message-avatar {
+  display: flex;
+  align-items: flex-end;
+  margin: 0 8px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.ai-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+/* 调整消息布局 */
+.message {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.message.user {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message.ai {
+  justify-content: flex-start;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chat-input {
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #e1e8ed;
+  width: 100%;
+  box-sizing: border-box;
+}
 .back-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
@@ -508,6 +592,8 @@ export default {
   cursor: pointer;
   font-size: 14px;
   transition: background 0.3s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .back-btn:hover {
@@ -520,12 +606,29 @@ export default {
   justify-content: space-between;
   gap: 20px;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  padding: 20px;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-header h2 {
   flex: 1;
   text-align: center;
   margin: 0;
+}
+
+.chat-header .header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
 }
 
 .status-indicator {
@@ -755,11 +858,81 @@ export default {
   }
 }
 
+/* 平板设备优化 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .chat-messages {
+    padding: 20px 30px;
+  }
+  
+  .chat-header,
+  .chat-input {
+    padding: 20px 30px;
+  }
+  
+  .message-bubble {
+    max-width: 75%;
+  }
+}
+
+/* 移动设备优化 */
 @media (max-width: 768px) {
+  .chat-container {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* 动态视口高度，支持移动设备地址栏 */
+  }
+  
   .chat-header {
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    padding: 15px;
+  }
+  
+  .chat-header h2 {
+    text-align: left;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  
+  .status-indicator {
+    text-align: right;
+    font-size: 11px;
+    min-width: auto;
+  }
+  
+  .chat-header .header-right {
+    display: flex;
     flex-direction: column;
-    gap: 10px;
-    text-align: center;
+    align-items: flex-end;
+    flex: 1;
+    position: static;
+    left: auto;
+    transform: none;
+    width: auto;
+  }
+  
+  .chat-header h2 {
+    text-align: right;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  
+  .status-indicator {
+    text-align: right;
+    font-size: 11px;
+    min-width: auto;
+  }
+  
+  .chat-messages {
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+  }
+  
+  .chat-input {
+    padding: 15px;
   }
   
   .status-indicator {
@@ -781,6 +954,25 @@ export default {
   .completion-message .message-content {
     margin-left: 20px;
     font-size: 13px;
+  }
+  
+  .message-bubble {
+    max-width: 75%;
+    font-size: 14px;
+  }
+  
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  
+  .input-group {
+    gap: 10px;
+  }
+  
+  .chat-input input {
+    font-size: 16px; /* 防止iOS缩放 */
   }
 }
 </style>

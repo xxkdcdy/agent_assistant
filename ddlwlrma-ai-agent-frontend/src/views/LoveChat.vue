@@ -2,12 +2,20 @@
   <div class="chat-container">
     <div class="chat-header">
       <button class="back-btn" @click="goBack">← 返回</button>
-      <h2>AI 恋爱大师 💕</h2>
-      <div class="chat-id">会话ID: {{ chatId }}</div>
+      <div class="header-right">
+        <h2>AI 恋爱大师 💕</h2>
+        <div class="chat-id">会话ID: {{ chatId }}</div>
+      </div>
     </div>
     
     <div class="chat-messages" ref="messagesContainer">
       <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
+        <div class="message-avatar" v-if="message.type === 'ai'">
+          <div class="avatar ai-avatar">💕</div>
+        </div>
+        <div class="message-avatar" v-if="message.type === 'user'">
+          <div class="avatar user-avatar">👤</div>
+        </div>
         <div class="message-bubble">
           <div class="message-content" v-html="formatMessage(message.content)"></div>
           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
@@ -135,6 +143,7 @@ export default {
     
     handleSSEOpen() {
       console.log('恋爱大师SSE连接已建立')
+      this.isConnected = true
     },
     
     handleSSEClose() {
@@ -147,6 +156,7 @@ export default {
       }
       
       this.isLoading = false
+      this.isConnected = false
       this.isProcessingSSE = false
       
       // 标记流式传输结束
@@ -222,6 +232,7 @@ export default {
       if (this.currentAIMessage && this.currentAIMessage.length > 0) {
         console.log('检测到AI已有回复内容，忽略连接关闭错误')
         this.isLoading = false
+        this.isConnected = false
         // 确保连接完全关闭
         if (this.sseConnection) {
           this.sseConnection.close()
@@ -235,7 +246,7 @@ export default {
       
       // 添加详细错误消息
       let errorMessage = '抱歉，无法连接到AI服务。'
-      errorMessage += '\n\n可能的原因：\n• 后端服务未启动（需要运行在 localhost:8123）\n• 网络连接问题\n• 服务器暂时不可用\n\n请确保后端服务正常运行后重试。'
+      errorMessage += '\n\n可能的原因：\n• 后端服务未启动\n• 网络连接问题\n• 服务器暂时不可用\n\n请确保后端服务正常运行后重试。'
       
       this.messages.push({
         id: Date.now(),
@@ -278,6 +289,82 @@ export default {
 </script>
 
 <style scoped>
+/* 全屏样式覆盖 */
+.chat-container {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 头像样式 */
+.message-avatar {
+  display: flex;
+  align-items: flex-end;
+  margin: 0 8px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.ai-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+/* 调整消息布局 */
+.message {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.message.user {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message.ai {
+  justify-content: flex-start;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chat-input {
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #e1e8ed;
+  width: 100%;
+  box-sizing: border-box;
+}
 .back-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
@@ -287,6 +374,8 @@ export default {
   cursor: pointer;
   font-size: 14px;
   transition: background 0.3s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .back-btn:hover {
@@ -298,12 +387,30 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-header h2 {
   flex: 1;
   text-align: center;
   margin: 0;
+}
+
+.chat-header .header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
 }
 
 .chat-id {
@@ -327,16 +434,111 @@ export default {
   text-align: left;
 }
 
+/* 平板设备优化 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .chat-messages {
+    padding: 20px 30px;
+  }
+  
+  .chat-header,
+  .chat-input {
+    padding: 20px 30px;
+  }
+  
+  .message-bubble {
+    max-width: 75%;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+
+/* 移动设备优化 */
 @media (max-width: 768px) {
+  .chat-container {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* 动态视口高度，支持移动设备地址栏 */
+  }
+  
   .chat-header {
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    padding: 15px;
+  }
+  
+  .chat-header h2 {
+    text-align: left;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  
+  .chat-id {
+    text-align: right;
+    font-size: 11px;
+    min-width: auto;
+  }
+  
+  .chat-header .header-right {
+    display: flex;
     flex-direction: column;
-    gap: 10px;
-    text-align: center;
+    align-items: flex-end;
+    flex: 1;
+    position: static;
+    left: auto;
+    transform: none;
+    width: auto;
+  }
+  
+  .chat-header h2 {
+    text-align: right;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  
+  .chat-id {
+    text-align: right;
+    font-size: 11px;
+    min-width: auto;
+  }
+  
+  .chat-messages {
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+  }
+  
+  .chat-input {
+    padding: 15px;
   }
   
   .chat-id {
     text-align: center;
     min-width: auto;
+  }
+  
+  .message-bubble {
+    max-width: 75%;
+    font-size: 14px;
+  }
+  
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  
+  .input-group {
+    gap: 10px;
+  }
+  
+  .chat-input input {
+    font-size: 16px; /* 防止iOS缩放 */
   }
 }
 </style>
