@@ -42,6 +42,9 @@ public abstract class BaseAgent {
   
     // Memory（需要自主维护会话上下文）  
     private List<Message> messageList = new ArrayList<>();
+
+    // 在BaseAgent类中添加成员变量
+    private SseEmitter currentEmitter;
   
     /**  
      * 运行代理  
@@ -97,6 +100,7 @@ public abstract class BaseAgent {
     public SseEmitter runStream(String userPrompt) {
         // 创建SseEmitter，设置较长的超时时间
         SseEmitter emitter = new SseEmitter(300000L); // 5分钟超时
+        this.currentEmitter = emitter; // 保存当前的emitter
 
         // 使用线程异步处理，避免阻塞主线程
         CompletableFuture.runAsync(() -> {
@@ -185,6 +189,18 @@ public abstract class BaseAgent {
      * 清理资源  
      */  
     protected void cleanup() {  
-        // 子类可以重写此方法来清理资源  
-    }  
+        // 子类可以重写此方法来清理资源
+        this.currentEmitter = null; // 清理引用
+    }
+
+    // 添加发送消息的方法
+    protected void sendThinkingMessage(String message) {
+        if (currentEmitter != null) {
+            try {
+                currentEmitter.send("💭 思考: " + message);
+            } catch (Exception e) {
+                log.error("发送思考消息失败", e);
+            }
+        }
+    }
 }

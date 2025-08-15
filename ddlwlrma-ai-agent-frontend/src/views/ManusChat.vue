@@ -9,8 +9,20 @@
     </div>
     
     <div class="chat-messages" ref="messagesContainer">
-      <div v-for="message in messages" :key="message.id" :class="['message', message.type, { 'step-message': message.isStep }]">
-        <div class="message-bubble" :class="{ 'step-bubble': message.isStep }">
+      <div v-for="message in messages" :key="message.id" :class="['message', message.type, { 
+        'step-message': message.isStep, 
+        'thinking-message': message.isThinking,
+        'error-message': message.isError,
+        'tool-message': message.isTool,
+        'completion-message': message.isCompletion
+      }]">
+        <div class="message-bubble" :class="{ 
+          'step-bubble': message.isStep, 
+          'thinking-bubble': message.isThinking,
+          'error-bubble': message.isError,
+          'tool-bubble': message.isTool,
+          'completion-bubble': message.isCompletion
+        }">
           <div class="message-content" v-html="formatMessage(message.content)"></div>
           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
         </div>
@@ -102,6 +114,14 @@ export default {
       this.currentStepBuffer = ''
       this.stepMessages = []
       this.processedSteps.clear()
+      
+      // 清理可能存在的特殊消息标识
+      this.messages.forEach(msg => {
+        msg.isThinking = false
+        msg.isError = false
+        msg.isTool = false
+        msg.isCompletion = false
+      })
       
       // 生成新的连接ID
       const newConnectionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9)
@@ -219,6 +239,11 @@ export default {
           return
         }
         
+        // 检查是否是特殊类型消息
+        if (this.handleSpecialMessage(processedData)) {
+          return
+        }
+        
         // 将数据添加到步骤缓冲区
         this.currentStepBuffer += processedData
         
@@ -307,6 +332,94 @@ export default {
       } else {
         console.log('跳过重复步骤:', stepId)
       }
+    },
+    
+    addThinkingMessage(content) {
+      const thinkingMessage = {
+        id: Date.now() + Math.random(),
+        type: 'ai',
+        content: content,
+        timestamp: new Date(),
+        isStreaming: false,
+        isThinking: true
+      }
+      
+      this.messages.push(thinkingMessage)
+      console.log('添加思考消息:', content.substring(0, 50) + '...')
+      this.scrollToBottom()
+    },
+    
+    handleSpecialMessage(data) {
+      // 思考消息
+      if (data.startsWith('💭 思考: ')) {
+        this.addThinkingMessage(data.substring('💭 思考: '.length))
+        return true
+      }
+      
+      // 错误消息
+      if (data.startsWith('❌ ') || data.includes('错误') || data.includes('失败')) {
+        this.addErrorMessage(data)
+        return true
+      }
+      
+      // 工具调用信息（可能的其他特殊消息）
+      if (data.startsWith('🔧 工具: ') || data.startsWith('工具调用: ')) {
+        this.addToolMessage(data)
+        return true
+      }
+      
+      // 完成消息
+      if (data.includes('任务完成') || data.includes('执行完成') || data.includes('处理完成')) {
+        this.addCompletionMessage(data)
+        return true
+      }
+      
+      return false
+    },
+    
+    addErrorMessage(content) {
+      const errorMessage = {
+        id: Date.now() + Math.random(),
+        type: 'ai',
+        content: content,
+        timestamp: new Date(),
+        isStreaming: false,
+        isError: true
+      }
+      
+      this.messages.push(errorMessage)
+      console.log('添加错误消息:', content.substring(0, 50) + '...')
+      this.scrollToBottom()
+    },
+    
+    addToolMessage(content) {
+      const toolMessage = {
+        id: Date.now() + Math.random(),
+        type: 'ai',
+        content: content,
+        timestamp: new Date(),
+        isStreaming: false,
+        isTool: true
+      }
+      
+      this.messages.push(toolMessage)
+      console.log('添加工具消息:', content.substring(0, 50) + '...')
+      this.scrollToBottom()
+    },
+    
+    addCompletionMessage(content) {
+      const completionMessage = {
+        id: Date.now() + Math.random(),
+        type: 'ai',
+        content: content,
+        timestamp: new Date(),
+        isStreaming: false,
+        isCompletion: true
+      }
+      
+      this.messages.push(completionMessage)
+      console.log('添加完成消息:', content.substring(0, 50) + '...')
+      this.scrollToBottom()
     },
     
     handleSSEError(error, connectionId) {
@@ -496,6 +609,152 @@ export default {
   font-weight: 500;
 }
 
+/* 思考消息特殊样式 */
+.thinking-message .thinking-bubble {
+  background: linear-gradient(135deg, #fef9e7 0%, #fdf2e9 100%);
+  border: 2px solid #f39c12;
+  border-left: 6px solid #e67e22;
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.15);
+  position: relative;
+  animation: thinkingPulse 2s ease-in-out infinite;
+}
+
+.thinking-message .thinking-bubble::before {
+  content: "💭";
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.thinking-message .message-content {
+  margin-left: 25px;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d68910;
+}
+
+.thinking-message .message-time {
+  color: #e67e22;
+  font-weight: 500;
+}
+
+@keyframes thinkingPulse {
+  0%, 100% { 
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.15);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 6px 16px rgba(243, 156, 18, 0.25);
+    transform: scale(1.01);
+  }
+}
+
+/* 错误消息特殊样式 */
+.error-message .error-bubble {
+  background: linear-gradient(135deg, #fdedec 0%, #fadbd8 100%);
+  border: 2px solid #e74c3c;
+  border-left: 6px solid #c0392b;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.15);
+  position: relative;
+}
+
+.error-message .error-bubble::before {
+  content: "❌";
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.error-message .message-content {
+  margin-left: 25px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c0392b;
+}
+
+.error-message .message-time {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+/* 工具消息特殊样式 */
+.tool-message .tool-bubble {
+  background: linear-gradient(135deg, #eaf2f8 0%, #d5dbdb 100%);
+  border: 2px solid #5d6d7e;
+  border-left: 6px solid #34495e;
+  box-shadow: 0 4px 12px rgba(93, 109, 126, 0.15);
+  position: relative;
+}
+
+.tool-message .tool-bubble::before {
+  content: "🔧";
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.tool-message .message-content {
+  margin-left: 25px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #34495e;
+}
+
+.tool-message .message-time {
+  color: #5d6d7e;
+  font-weight: 500;
+}
+
+/* 完成消息特殊样式 */
+.completion-message .completion-bubble {
+  background: linear-gradient(135deg, #eafaf1 0%, #d5f4e6 100%);
+  border: 2px solid #27ae60;
+  border-left: 6px solid #229954;
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.15);
+  position: relative;
+  animation: completionGlow 3s ease-in-out;
+}
+
+.completion-message .completion-bubble::before {
+  content: "✅";
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.completion-message .message-content {
+  margin-left: 25px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #229954;
+}
+
+.completion-message .message-time {
+  color: #27ae60;
+  font-weight: 500;
+}
+
+@keyframes completionGlow {
+  0%, 100% { 
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.15);
+  }
+  50% { 
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.3);
+  }
+}
+
 @media (max-width: 768px) {
   .chat-header {
     flex-direction: column;
@@ -508,6 +767,18 @@ export default {
   }
   
   .step-message .message-content {
+    margin-left: 20px;
+    font-size: 13px;
+  }
+  
+  .thinking-message .message-content {
+    margin-left: 20px;
+    font-size: 13px;
+  }
+  
+  .error-message .message-content,
+  .tool-message .message-content,
+  .completion-message .message-content {
     margin-left: 20px;
     font-size: 13px;
   }
