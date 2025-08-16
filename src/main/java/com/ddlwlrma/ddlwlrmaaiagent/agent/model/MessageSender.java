@@ -1,6 +1,9 @@
 package com.ddlwlrma.ddlwlrmaaiagent.agent.model;
 
+import com.ddlwlrma.ddlwlrmaaiagent.constant.AiConstant;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
 
 public class MessageSender {
 
@@ -19,6 +22,14 @@ public class MessageSender {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void complete() {
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("complete")
+                    .data(AiConstant.END_CONVERSATION));
+        } catch (IOException ignored) {}
     }
 
     public void sendThinking(String message) {

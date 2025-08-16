@@ -1,6 +1,8 @@
 package com.ddlwlrma.ddlwlrmaaiagent.tools;
 
 import com.ddlwlrma.ddlwlrmaaiagent.service.MailService163;
+import jakarta.annotation.Resource;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +24,6 @@ public class ToolRegistration {
 
     @Value("${mail.auth-code}")
     private String authCode;
-
     @Bean
     public ToolCallback[] allTools() {
         FileOperationTool fileOperationTool = new FileOperationTool();

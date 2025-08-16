@@ -119,5 +119,11 @@ export function startManusChatSSE(message, onMessage, onError, onOpen, onClose, 
   return new SSEConnection(url, onMessage, onError, onOpen, onClose, onComplete)
 }
 
+// 海龟汤聊天API - SSE接口
+export function startTurtleSoupSSE(message, chatId, onMessage, onError, onOpen, onClose, onComplete) {
+  const url = `${API_BASE_URL}/ai/turtle/chat/sse/emitter?message=${encodeURIComponent(message)}&chatId=${encodeURIComponent(chatId)}`
+  return new SSEConnection(url, onMessage, onError, onOpen, onClose, onComplete)
+}
+
 export default api
 

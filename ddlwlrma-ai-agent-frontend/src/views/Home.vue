@@ -33,6 +33,18 @@
             </div>
           </div>
           
+          <div class="app-card" @click="goToTurtleSoup">
+            <div class="card-content">
+              <div class="card-icon">🐢</div>
+              <h3 class="card-title">海龟汤游戏</h3>
+              <p class="card-description">经典的推理游戏，通过提问来猜出谜底，考验您的逻辑思维能力</p>
+            </div>
+            <div class="card-button">
+              <span>开始游戏</span>
+              <span class="arrow">→</span>
+            </div>
+          </div>
+          
           <div class="app-card coming-soon">
             <div class="card-content">
               <div class="card-icon">🚀</div>
@@ -88,6 +100,9 @@ export default {
     },
     goToManusChat() {
       this.$router.push('/manus-chat')
+    },
+    goToTurtleSoup() {
+      this.$router.push('/turtle-soup')
     }
   }
 }

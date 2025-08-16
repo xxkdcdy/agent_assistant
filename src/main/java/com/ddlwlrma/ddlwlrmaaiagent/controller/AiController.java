@@ -3,6 +3,7 @@ package com.ddlwlrma.ddlwlrmaaiagent.controller;
 
 import com.ddlwlrma.ddlwlrmaaiagent.agent.DdlwlrmaManus;
 import com.ddlwlrma.ddlwlrmaaiagent.app.LoveApp;
+import com.ddlwlrma.ddlwlrmaaiagent.app.TurtleSoupApp;
 import com.ddlwlrma.ddlwlrmaaiagent.constant.AiConstant;
 import jakarta.annotation.Resource;
 import org.springframework.ai.chat.model.ChatModel;
@@ -26,6 +27,9 @@ import java.util.stream.Stream;
 public class AiController {
     @Resource
     private LoveApp loveApp;
+
+    @Resource
+    private TurtleSoupApp turtleSoupApp;
 
     @Resource
     private ToolCallback[] allTools;
@@ -112,5 +116,51 @@ public class AiController {
         return ddlwlrmaManus.runStream(message, emitter);
     }
 
+    @GetMapping("/turtle/chat/sse/emitter")
+    public SseEmitter doChatWithTurtleSoupAppSseEmitter(String message, String chatId) {
+        SseEmitter emitter = new SseEmitter(180000L);
 
+        turtleSoupApp.doChatByStream(message, chatId)
+                .subscribe(
+                        // onNext
+                        chunk -> {
+                            try {
+                                emitter.send(SseEmitter.event()
+                                        .name("message")
+                                        .data(chunk));
+                            } catch (IOException e) {
+                                emitter.completeWithError(e);
+                            }
+                        },
+                        // onError
+                        error -> {
+                            try {
+                                emitter.send(SseEmitter.event()
+                                        .name("error")
+                                        .data(error.getMessage()));
+                                emitter.send(SseEmitter.event()
+                                        .name("complete")
+                                        .data(AiConstant.END_CONVERSATION));
+                            } catch (IOException ignored) {}
+                            emitter.completeWithError(error);
+                        },
+                        // onComplete
+                        () -> {
+                            try {
+                                // 最后一条标记消息
+                                emitter.send(SseEmitter.event()
+                                        .name("complete")
+                                        .data(AiConstant.END_CONVERSATION));
+                            } catch (IOException ignored) {}
+                            emitter.complete();
+                        }
+                );
+
+        return emitter;
+    }
+
+    @GetMapping("/turtle/chat/sync")
+    public String doChatWithTurtleSoupAppSync(String message, String chatId) {
+        return turtleSoupApp.doChat(message, chatId);
+    }
 }

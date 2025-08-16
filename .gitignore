@@ -10,6 +10,7 @@ src/main/resources/application-local.yml
 tmp
 src/main/resources/document
 src/main/resources/mcp-servers.json
+src/main/resources/puzzles
 
 ### STS ###
 .apt_generated

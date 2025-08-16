@@ -145,14 +145,14 @@ public abstract class BaseAgent {
                         messageSender.sendCompletion("执行结束: 达到最大步骤 (" + maxSteps + ")");
                     }
                     // 正常完成
-                    emitter.send(AiConstant.END_CONVERSATION);
+                    messageSender.complete();    // 通知客户端结束
                     emitter.complete();
                 } catch (Exception e) {
                     state = AgentState.ERROR;
                     log.error("执行智能体失败", e);
                     try {
                         messageSender.sendError("执行错误: " + e.getMessage());
-                        emitter.send(AiConstant.END_CONVERSATION);
+                        messageSender.complete();    // 通知客户端结束
                         emitter.complete();
                     } catch (Exception ex) {
                         emitter.completeWithError(ex);
