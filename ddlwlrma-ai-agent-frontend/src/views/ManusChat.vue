@@ -11,26 +11,28 @@
     </div>
     
     <div class="chat-messages" ref="messagesContainer">
-      <div v-for="message in messages" :key="message.id" :class="['message', message.type, { 
-        'step-message': message.isStep, 
-        'thinking-message': message.isThinking,
-        'error-message': message.isError,
-        'tool-message': message.isTool,
-        'completion-message': message.isCompletion
-      }]">
+             <div v-for="message in messages" :key="message.id" :class="['message', message.type, { 
+         'step-message': message.isStep, 
+         'thinking-message': message.isThinking,
+         'error-message': message.isError,
+         'tool-message': message.isTool,
+         'result-message': message.isResult,
+         'completion-message': message.isCompletion
+       }]">
         <div class="message-avatar" v-if="message.type === 'ai'">
           <div class="avatar ai-avatar">🤖</div>
         </div>
         <div class="message-avatar" v-if="message.type === 'user'">
           <div class="avatar user-avatar">👤</div>
         </div>
-        <div class="message-bubble" :class="{ 
-          'step-bubble': message.isStep, 
-          'thinking-bubble': message.isThinking,
-          'error-bubble': message.isError,
-          'tool-bubble': message.isTool,
-          'completion-bubble': message.isCompletion
-        }">
+                 <div class="message-bubble" :class="{ 
+           'step-bubble': message.isStep, 
+           'thinking-bubble': message.isThinking,
+           'error-bubble': message.isError,
+           'tool-bubble': message.isTool,
+           'result-bubble': message.isResult,
+           'completion-bubble': message.isCompletion
+         }">
           <div class="message-content" v-html="formatMessage(message.content)"></div>
           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
         </div>
@@ -79,8 +81,7 @@ export default {
       isProcessingSSE: false,  // 防止重复处理
       currentStepBuffer: '',   // 当前步骤缓冲区
       stepMessages: [],        // 存储各个步骤的消息
-      connectionId: null,      // 连接ID，用于识别连接
-      processedSteps: new Set() // 已处理的步骤ID
+             connectionId: null      // 连接ID，用于识别连接
     }
   },
   created() {
@@ -116,12 +117,11 @@ export default {
       this.inputMessage = ''
       this.isLoading = true
       
-      // 强制清理所有状态
-      this.isProcessingSSE = false
-      this.currentAIMessage = ''
-      this.currentStepBuffer = ''
-      this.stepMessages = []
-      this.processedSteps.clear()
+             // 强制清理所有状态
+       this.isProcessingSSE = false
+       this.currentAIMessage = ''
+       this.currentStepBuffer = ''
+       this.stepMessages = []
       
       // 清理可能存在的特殊消息标识
       this.messages.forEach(msg => {
@@ -159,12 +159,11 @@ export default {
         
         console.log('创建新的SSE连接:', `/api/ai/manus/chat?message=${encodeURIComponent(messageToSend)}`, '连接ID:', newConnectionId)
         
-        // 重置状态
-        this.currentAIMessage = ''
-        this.currentStepBuffer = ''
-        this.stepMessages = []
-        this.processedSteps.clear()
-        this.isProcessingSSE = true
+                 // 重置状态
+         this.currentAIMessage = ''
+         this.currentStepBuffer = ''
+         this.stepMessages = []
+         this.isProcessingSSE = true
         
         // 创建新的SSE连接
         this.sseConnection = startManusChatSSE(
@@ -172,7 +171,8 @@ export default {
           (data) => this.handleSSEMessage(data, newConnectionId),
           (error) => this.handleSSEError(error, newConnectionId),
           () => this.handleSSEOpen(newConnectionId),
-          () => this.handleSSEClose(newConnectionId)
+          () => this.handleSSEClose(newConnectionId),
+          (data) => this.handleSSEComplete(data, newConnectionId)
         )
         
         this.sseConnection.connect()
@@ -239,7 +239,14 @@ export default {
         
         console.log('收到SSE数据:', data, '连接ID:', connectionId)
         
-        // Spring AI直接发送内容，不需要处理特殊前缀
+        // 检查是否是结束标记
+        if (data.trim() === '[END_CONVERSATION]') {
+          console.log('检测到对话结束标记，调用complete处理')
+          this.handleSSEComplete(data, connectionId)
+          return
+        }
+        
+        // 处理单行消息
         let processedData = data.trim()
         
         // 跳过空数据
@@ -247,16 +254,8 @@ export default {
           return
         }
         
-        // 检查是否是特殊类型消息
-        if (this.handleSpecialMessage(processedData)) {
-          return
-        }
-        
-        // 将数据添加到步骤缓冲区
-        this.currentStepBuffer += processedData
-        
-        // 检查是否有完整的步骤
-        this.processStepBuffer()
+        // 直接处理单行消息，按照约定前缀规范识别消息类型
+        this.processSingleMessage(processedData)
         
         this.scrollToBottom()
         
@@ -269,34 +268,133 @@ export default {
       }
     },
     
+    handleSSEComplete(data, connectionId) {
+      // 检查连接ID是否匹配
+      if (connectionId && this.connectionId !== connectionId) {
+        console.log('忽略过期连接的Complete事件:', connectionId, '当前连接:', this.connectionId)
+        return
+      }
+      
+      console.log('Spring AI流式传输完成，连接ID:', connectionId)
+      
+      // 清理状态
+      this.isLoading = false
+      this.isConnected = false
+      this.isProcessingSSE = false
+      
+      // 确保连接完全关闭
+      if (this.sseConnection) {
+        this.sseConnection.close()
+        this.sseConnection = null
+      }
+      
+      console.log('智能体任务完成')
+    },
+    
+    processSingleMessage(data) {
+      // 按照约定前缀规范识别单行消息类型
+      let messageType = 'step' // 默认类型
+      
+      if (data.startsWith('💭 THINKING:') || data.startsWith('💭 思考:')) {
+        messageType = 'thinking'
+        console.log('识别为思考消息:', data.substring(0, 50) + '...')
+      } else if (data.startsWith('⚙️ STEP:') || data.startsWith('⚙️ 步骤:')) {
+        messageType = 'step'
+        console.log('识别为步骤消息:', data.substring(0, 50) + '...')
+      } else if (data.startsWith('🛠 TOOL:') || data.startsWith('🛠 工具:')) {
+        messageType = 'tool'
+        console.log('识别为工具消息:', data.substring(0, 50) + '...')
+      } else if (data.startsWith('📊 RESULT:') || data.startsWith('📊 结果:')) {
+        messageType = 'result'
+        console.log('识别为结果消息:', data.substring(0, 50) + '...')
+      } else if (data.startsWith('✅ COMPLETION:') || data.startsWith('✅ 完成:')) {
+        messageType = 'completion'
+        console.log('识别为完成消息:', data.substring(0, 50) + '...')
+      } else if (data.startsWith('❌ ERROR:') || data.startsWith('❌ 错误:')) {
+        messageType = 'error'
+        console.log('识别为错误消息:', data.substring(0, 50) + '...')
+      } else {
+        // 如果没有识别到前缀，默认为步骤消息
+        messageType = 'step'
+        console.log('未识别前缀，默认为步骤消息:', data.substring(0, 50) + '...')
+      }
+      
+      // 直接添加消息
+      this.addTypedMessage(data, messageType)
+    },
+    
     processStepBuffer() {
-      // 简单的方法：当遇到新的Step时，将前面的内容作为完整步骤处理
+      // 按照约定前缀规范分割不同类型的消息
       const lines = this.currentStepBuffer.split('\n')
-      let pendingStep = ''
+      let currentMessage = ''
       let processedLines = 0
+      let messageType = 'thinking' // 默认类型
       
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
         
-        // 检查是否是新步骤的开始
-        if (line.match(/^Step \d+:/)) {
-          // 如果有待处理的步骤，先处理它
-          if (pendingStep.trim()) {
-            this.addStepMessage(pendingStep.trim())
+        // 按照约定前缀规范检测消息类型
+        if (line.startsWith('💭 THINKING:') || line.startsWith('💭 思考:')) {
+          // 如果有待处理的消息，先处理它
+          if (currentMessage.trim()) {
+            this.addTypedMessage(currentMessage.trim(), messageType)
           }
-          // 开始新的步骤
-          pendingStep = line
+          // 开始新的思考消息
+          currentMessage = line
+          messageType = 'thinking'
+          processedLines = i
+        } else if (line.startsWith('⚙️ STEP:') || line.startsWith('⚙️ 步骤:')) {
+          // 如果有待处理的消息，先处理它
+          if (currentMessage.trim()) {
+            this.addTypedMessage(currentMessage.trim(), messageType)
+          }
+          // 开始新的步骤消息
+          currentMessage = line
+          messageType = 'step'
+          processedLines = i
+        } else if (line.startsWith('🛠 TOOL:') || line.startsWith('🛠 工具:')) {
+          // 如果有待处理的消息，先处理它
+          if (currentMessage.trim()) {
+            this.addTypedMessage(currentMessage.trim(), messageType)
+          }
+          // 开始新的工具消息
+          currentMessage = line
+          messageType = 'tool'
+          processedLines = i
+        } else if (line.startsWith('📊 RESULT:') || line.startsWith('📊 结果:')) {
+          // 如果有待处理的消息，先处理它
+          if (currentMessage.trim()) {
+            this.addTypedMessage(currentMessage.trim(), messageType)
+          }
+          // 开始新的结果消息
+          currentMessage = line
+          messageType = 'result'
+          processedLines = i
+        } else if (line.startsWith('✅ COMPLETION:') || line.startsWith('✅ 完成:')) {
+          // 如果有待处理的消息，先处理它
+          if (currentMessage.trim()) {
+            this.addTypedMessage(currentMessage.trim(), messageType)
+          }
+          // 开始新的完成消息
+          currentMessage = line
+          messageType = 'completion'
+          processedLines = i
+        } else if (line.startsWith('❌ ERROR:') || line.startsWith('❌ 错误:')) {
+          // 如果有待处理的消息，先处理它
+          if (currentMessage.trim()) {
+            this.addTypedMessage(currentMessage.trim(), messageType)
+          }
+          // 开始新的错误消息
+          currentMessage = line
+          messageType = 'error'
           processedLines = i
         } else {
-          // 累加到当前步骤
-          pendingStep += '\n' + line
-        }
-        
-        // 检查是否是完整的步骤（包含结束标志）
-        if (pendingStep.includes('完成了它的任务') || pendingStep.includes('任务结束')) {
-          this.addStepMessage(pendingStep.trim())
-          pendingStep = ''
-          processedLines = i + 1
+          // 累加到当前消息
+          if (currentMessage) {
+            currentMessage += '\n' + line
+          } else {
+            currentMessage = line
+          }
         }
       }
       
@@ -308,39 +406,57 @@ export default {
       }
     },
     
-    addStepMessage(content) {
-      // 生成步骤唯一标识
-      const stepId = content.substring(0, 30).replace(/\s+/g, ' ')
-      
-      // 检查是否已处理过这个步骤
-      if (this.processedSteps.has(stepId)) {
-        console.log('跳过重复步骤:', stepId)
-        return
-      }
-      
-      // 避免重复添加相同的步骤
-      const isDuplicate = this.stepMessages.some(msg => 
-        msg.content.substring(0, 30).replace(/\s+/g, ' ') === stepId
-      )
-      
-      if (!isDuplicate) {
-        const stepMessage = {
-          id: Date.now() + Math.random(),
-          type: 'ai',
-          content: content,
-          timestamp: new Date(),
-          isStreaming: false,
-          isStep: true
-        }
-        
-        this.stepMessages.push(stepMessage)
-        this.messages.push(stepMessage)
-        this.processedSteps.add(stepId)
-        console.log('添加步骤消息:', stepId)
-      } else {
-        console.log('跳过重复步骤:', stepId)
-      }
-    },
+         addTypedMessage(content, messageType) {
+       const message = {
+         id: Date.now() + Math.random(),
+         type: 'ai',
+         content: content,
+         timestamp: new Date(),
+         isStreaming: false
+       }
+       
+       // 根据消息类型设置不同的标识
+       switch (messageType) {
+         case 'thinking':
+           message.isThinking = true
+           break
+         case 'step':
+           message.isStep = true
+           break
+         case 'tool':
+           message.isTool = true
+           break
+         case 'result':
+           message.isResult = true
+           break
+         case 'completion':
+           message.isCompletion = true
+           break
+         case 'error':
+           message.isError = true
+           break
+         default:
+           message.isStep = true
+       }
+       
+       this.messages.push(message)
+       console.log('添加', messageType, '消息:', content.substring(0, 50) + '...')
+     },
+    
+         addStepMessage(content) {
+       const stepMessage = {
+         id: Date.now() + Math.random(),
+         type: 'ai',
+         content: content,
+         timestamp: new Date(),
+         isStreaming: false,
+         isStep: true
+       }
+       
+       this.stepMessages.push(stepMessage)
+       this.messages.push(stepMessage)
+       console.log('添加步骤消息:', content.substring(0, 50) + '...')
+     },
     
     addThinkingMessage(content) {
       const thinkingMessage = {
@@ -479,9 +595,18 @@ export default {
       }
     },
     
-    formatMessage(content) {
-      return content.replace(/\n/g, '<br>')
-    },
+         formatMessage(content) {
+       // 对于工具消息，只显示前200个字符
+       if (this.isToolMessage(content)) {
+         const truncated = content.length > 200 ? content.substring(0, 200) + '...' : content
+         return truncated.replace(/\n/g, '<br>')
+       }
+       return content.replace(/\n/g, '<br>')
+     },
+     
+     isToolMessage(content) {
+       return content.startsWith('🛠 TOOL:') || content.startsWith('🛠 工具:')
+     },
     
     formatTime(timestamp) {
       return timestamp.toLocaleTimeString('zh-CN', { 
@@ -691,17 +816,7 @@ export default {
   position: relative;
 }
 
-.step-message .step-bubble::before {
-  content: "🔧";
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  opacity: 0.7;
-}
-
 .step-message .message-content {
-  margin-left: 25px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.6;
@@ -722,17 +837,7 @@ export default {
   animation: thinkingPulse 2s ease-in-out infinite;
 }
 
-.thinking-message .thinking-bubble::before {
-  content: "💭";
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
 .thinking-message .message-content {
-  margin-left: 25px;
   font-style: italic;
   font-size: 14px;
   line-height: 1.5;
@@ -764,17 +869,7 @@ export default {
   position: relative;
 }
 
-.error-message .error-bubble::before {
-  content: "❌";
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
 .error-message .message-content {
-  margin-left: 25px;
   font-weight: 500;
   font-size: 14px;
   line-height: 1.5;
@@ -786,36 +881,47 @@ export default {
   font-weight: 500;
 }
 
-/* 工具消息特殊样式 */
-.tool-message .tool-bubble {
-  background: linear-gradient(135deg, #eaf2f8 0%, #d5dbdb 100%);
-  border: 2px solid #5d6d7e;
-  border-left: 6px solid #34495e;
-  box-shadow: 0 4px 12px rgba(93, 109, 126, 0.15);
-  position: relative;
-}
-
-.tool-message .tool-bubble::before {
-  content: "🔧";
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.tool-message .message-content {
-  margin-left: 25px;
+ /* 工具消息特殊样式 */
+ .tool-message .tool-bubble {
+   background: linear-gradient(135deg, #eaf2f8 0%, #d5dbdb 100%);
+   border: 2px solid #5d6d7e;
+   border-left: 6px solid #34495e;
+   box-shadow: 0 4px 12px rgba(93, 109, 126, 0.15);
+   position: relative;
+ }
+ 
+ .tool-message .message-content {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 13px;
   line-height: 1.5;
   color: #34495e;
 }
-
-.tool-message .message-time {
-  color: #5d6d7e;
-  font-weight: 500;
+ 
+ .tool-message .message-time {
+   color: #5d6d7e;
+   font-weight: 500;
+ }
+ 
+ /* 结果消息特殊样式 */
+ .result-message .result-bubble {
+   background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+   border: 2px solid #28a745;
+   border-left: 6px solid #20c997;
+   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+   position: relative;
+ }
+ 
+ .result-message .message-content {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #155724;
 }
+ 
+ .result-message .message-time {
+   color: #28a745;
+   font-weight: 500;
+ }
 
 /* 完成消息特殊样式 */
 .completion-message .completion-bubble {
@@ -827,17 +933,7 @@ export default {
   animation: completionGlow 3s ease-in-out;
 }
 
-.completion-message .completion-bubble::before {
-  content: "✅";
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
 .completion-message .message-content {
-  margin-left: 25px;
   font-weight: 600;
   font-size: 14px;
   line-height: 1.5;
@@ -940,21 +1036,19 @@ export default {
   }
   
   .step-message .message-content {
-    margin-left: 20px;
     font-size: 13px;
   }
   
   .thinking-message .message-content {
-    margin-left: 20px;
     font-size: 13px;
   }
   
-  .error-message .message-content,
-  .tool-message .message-content,
-  .completion-message .message-content {
-    margin-left: 20px;
-    font-size: 13px;
-  }
+     .error-message .message-content,
+   .tool-message .message-content,
+   .result-message .message-content,
+   .completion-message .message-content {
+     font-size: 13px;
+   }
   
   .message-bubble {
     max-width: 75%;

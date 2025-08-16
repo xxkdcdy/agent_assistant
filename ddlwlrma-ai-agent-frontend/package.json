@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "node build.js production",
+    "build:dev": "node build.js development",
     "preview": "vite preview"
   },
   "dependencies": {

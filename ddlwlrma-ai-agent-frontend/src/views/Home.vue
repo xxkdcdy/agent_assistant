@@ -52,7 +52,7 @@
         <div class="footer-content">
           <div class="footer-section">
             <h4>关于我们</h4>
-            <p>DDLWLRMA AI Agent 致力于提供最先进的人工智能服务</p>
+            <p>DDLWLRMA AI Agent 致力于提供最先进的人工智能服务，简直是bad case鼠鼠</p>
           </div>
           <div class="footer-section">
             <h4>联系方式</h4>

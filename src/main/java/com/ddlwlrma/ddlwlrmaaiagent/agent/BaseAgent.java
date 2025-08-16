@@ -1,6 +1,8 @@
 package com.ddlwlrma.ddlwlrmaaiagent.agent;
 
 import com.ddlwlrma.ddlwlrmaaiagent.agent.model.AgentState;
+import com.ddlwlrma.ddlwlrmaaiagent.agent.model.MessageSender;
+import com.ddlwlrma.ddlwlrmaaiagent.constant.AiConstant;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.internal.StringUtil;
@@ -45,6 +47,9 @@ public abstract class BaseAgent {
 
     // 在BaseAgent类中添加成员变量
     private SseEmitter currentEmitter;
+
+    // 消息发送类
+    protected MessageSender messageSender;
   
     /**  
      * 运行代理  
@@ -97,21 +102,21 @@ public abstract class BaseAgent {
      * @param userPrompt 用户提示词
      * @return SseEmitter实例
      */
-    public SseEmitter runStream(String userPrompt) {
+    public SseEmitter runStream(String userPrompt, SseEmitter emitter) {
         // 创建SseEmitter，设置较长的超时时间
-        SseEmitter emitter = new SseEmitter(300000L); // 5分钟超时
         this.currentEmitter = emitter; // 保存当前的emitter
+        this.messageSender = new MessageSender(this.currentEmitter);   // 创建消息发送类
 
         // 使用线程异步处理，避免阻塞主线程
         CompletableFuture.runAsync(() -> {
             try {
                 if (this.state != AgentState.IDLE) {
-                    emitter.send("错误：无法从状态运行代理: " + this.state);
+                    messageSender.sendError("错误：无法从状态运行代理: " + this.state);
                     emitter.complete();
                     return;
                 }
                 if (StringUtil.isBlank(userPrompt)) {
-                    emitter.send("错误：不能使用空提示词运行代理");
+                    messageSender.sendError("错误：不能使用空提示词运行代理");
                     emitter.complete();
                     return;
                 }
@@ -131,21 +136,23 @@ public abstract class BaseAgent {
                         String stepResult = step();
                         String result = "Step " + stepNumber + ": " + stepResult;
 
-                        // 发送每一步的结果
-                        emitter.send(result);
+                        // 发送每一步工具执行后的结果
+                        messageSender.sendTool(result);
                     }
                     // 检查是否超出步骤限制
                     if (currentStep >= maxSteps) {
                         state = AgentState.FINISHED;
-                        emitter.send("执行结束: 达到最大步骤 (" + maxSteps + ")");
+                        messageSender.sendCompletion("执行结束: 达到最大步骤 (" + maxSteps + ")");
                     }
                     // 正常完成
+                    emitter.send(AiConstant.END_CONVERSATION);
                     emitter.complete();
                 } catch (Exception e) {
                     state = AgentState.ERROR;
                     log.error("执行智能体失败", e);
                     try {
-                        emitter.send("执行错误: " + e.getMessage());
+                        messageSender.sendError("执行错误: " + e.getMessage());
+                        emitter.send(AiConstant.END_CONVERSATION);
                         emitter.complete();
                     } catch (Exception ex) {
                         emitter.completeWithError(ex);
@@ -191,16 +198,5 @@ public abstract class BaseAgent {
     protected void cleanup() {  
         // 子类可以重写此方法来清理资源
         this.currentEmitter = null; // 清理引用
-    }
-
-    // 添加发送消息的方法
-    protected void sendThinkingMessage(String message) {
-        if (currentEmitter != null) {
-            try {
-                currentEmitter.send("💭 思考: " + message);
-            } catch (Exception e) {
-                log.error("发送思考消息失败", e);
-            }
-        }
     }
 }

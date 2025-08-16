@@ -132,7 +132,8 @@ export default {
           (data) => this.handleSSEMessage(data),
           (error) => this.handleSSEError(error),
           () => this.handleSSEOpen(),
-          () => this.handleSSEClose()
+          () => this.handleSSEClose(),
+          (data) => this.handleSSEComplete(data)
         )
         
         this.sseConnection.connect()
@@ -179,6 +180,13 @@ export default {
         
         console.log('收到SSE数据:', data, '当前累积长度:', this.currentAIMessage.length)
         
+        // 检查是否是结束标记
+        if (data.trim() === '[END_CONVERSATION]') {
+          console.log('检测到对话结束标记，调用complete处理')
+          this.handleSSEComplete(data)
+          return
+        }
+        
         // Spring AI直接发送内容，不需要处理特殊前缀
         let processedData = data.trim()
         
@@ -219,6 +227,27 @@ export default {
       }
     },
     
+    handleSSEComplete(data) {
+      console.log('Spring AI流式传输完成，最终消息长度:', this.currentAIMessage.length)
+      this.isLoading = false
+      this.isProcessingSSE = false
+      this.isConnected = false
+      
+      // 标记流式传输结束
+      const aiMessages = this.messages.filter(msg => msg.type === 'ai' && msg.isStreaming)
+      if (aiMessages.length > 0) {
+        const lastAIMessage = aiMessages[aiMessages.length - 1]
+        lastAIMessage.isStreaming = false
+        console.log('标记消息传输完成，最终内容长度:', lastAIMessage.content.length)
+      }
+      
+      // 确保连接完全关闭
+      if (this.sseConnection) {
+        this.sseConnection.close()
+        this.sseConnection = null
+      }
+    },
+    
     handleSSEError(error) {
       console.error('恋爱大师SSE连接错误:', error, 'currentAIMessage长度:', this.currentAIMessage.length)
       
@@ -233,6 +262,16 @@ export default {
         console.log('检测到AI已有回复内容，忽略连接关闭错误')
         this.isLoading = false
         this.isConnected = false
+        this.isProcessingSSE = false
+        
+        // 标记流式传输结束
+        const aiMessages = this.messages.filter(msg => msg.type === 'ai' && msg.isStreaming)
+        if (aiMessages.length > 0) {
+          const lastAIMessage = aiMessages[aiMessages.length - 1]
+          lastAIMessage.isStreaming = false
+          console.log('标记消息传输完成，最终内容长度:', lastAIMessage.content.length)
+        }
+        
         // 确保连接完全关闭
         if (this.sseConnection) {
           this.sseConnection.close()

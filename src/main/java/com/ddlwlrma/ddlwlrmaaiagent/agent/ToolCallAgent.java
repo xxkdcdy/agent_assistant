@@ -58,7 +58,7 @@ public class ToolCallAgent extends ReActAgent {
     @Override
     public boolean think() {
         // 发送思考开始信息
-        sendThinkingMessage("正在分析当前情况...");
+        messageSender.sendStep("正在分析当前情况...");
 
         // 校验提示词
         if (getNextStepPrompt() != null && !getNextStepPrompt().isEmpty()) {
@@ -67,7 +67,7 @@ public class ToolCallAgent extends ReActAgent {
         }
 
         // 发送LLM调用信息
-        sendThinkingMessage("正在调用大语言模型进行推理...");
+        messageSender.sendThinking("正在调用大语言模型进行推理...");
 
         // 调用LLM，获取结果
         List<Message> messageList = getMessageList();
@@ -87,7 +87,7 @@ public class ToolCallAgent extends ReActAgent {
             List<AssistantMessage.ToolCall> toolCallList = assistantMessage.getToolCalls();
 
             // 发送思考结果
-            sendThinkingMessage("分析完成: " + result);
+            messageSender.sendThinking("分析完成: " + result);
             log.info(getName() + "的思考: " + result);
 
             if (!toolCallList.isEmpty()) {
@@ -100,7 +100,7 @@ public class ToolCallAgent extends ReActAgent {
                 log.info(toolCallInfo);
 
                 // 发送工具选择信息
-                sendThinkingMessage("选择了 " + toolCallList.size() + " 个工具: " +
+                messageSender.sendResult("选择了 " + toolCallList.size() + " 个工具: " +
                         toolCallList.stream()
                                 .map(AssistantMessage.ToolCall::name)
                                 .collect(Collectors.joining(", ")));
@@ -109,11 +109,10 @@ public class ToolCallAgent extends ReActAgent {
             if (toolCallList.isEmpty()) {
                 // 只有不调用工具时，才记录助手消息
                 getMessageList().add(assistantMessage);
-                sendThinkingMessage("无需使用工具，思考完成");
+                messageSender.sendResult("无需使用工具，思考完成");
                 return false;
             } else {
                 // 需要调用工具时，无需记录助手消息，因为调用工具时会自动记录
-                sendThinkingMessage("准备执行工具调用...");
                 return true;
             }
         } catch (Exception e) {

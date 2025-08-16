@@ -3,6 +3,7 @@ package com.ddlwlrma.ddlwlrmaaiagent.controller;
 
 import com.ddlwlrma.ddlwlrmaaiagent.agent.DdlwlrmaManus;
 import com.ddlwlrma.ddlwlrmaaiagent.app.LoveApp;
+import com.ddlwlrma.ddlwlrmaaiagent.constant.AiConstant;
 import jakarta.annotation.Resource;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -55,25 +56,44 @@ public class AiController {
 
     @GetMapping("/love_app/chat/sse/emitter")
     public SseEmitter doChatWithLoveAppSseEmitter(String message, String chatId) {
-        // 创建一个超时时间较长的 SseEmitter
-        SseEmitter emitter = new SseEmitter(180000L); // 3分钟超时
-        // 获取 Flux 数据流并直接订阅
+        SseEmitter emitter = new SseEmitter(180000L);
+
         loveApp.doChatByStream(message, chatId)
                 .subscribe(
-                        // 处理每条消息
+                        // onNext
                         chunk -> {
                             try {
-                                emitter.send(chunk);
+                                emitter.send(SseEmitter.event()
+                                        .name("message")
+                                        .data(chunk));
                             } catch (IOException e) {
                                 emitter.completeWithError(e);
                             }
                         },
-                        // 处理错误
-                        emitter::completeWithError,
-                        // 处理完成
-                        emitter::complete
+                        // onError
+                        error -> {
+                            try {
+                                emitter.send(SseEmitter.event()
+                                        .name("error")
+                                        .data(error.getMessage()));
+                                emitter.send(SseEmitter.event()
+                                        .name("complete")
+                                        .data(AiConstant.END_CONVERSATION));
+                            } catch (IOException ignored) {}
+                            emitter.completeWithError(error);
+                        },
+                        // onComplete
+                        () -> {
+                            try {
+                                // 最后一条标记消息
+                                emitter.send(SseEmitter.event()
+                                        .name("complete")
+                                        .data(AiConstant.END_CONVERSATION));
+                            } catch (IOException ignored) {}
+                            emitter.complete();
+                        }
                 );
-        // 返回emitter
+
         return emitter;
     }
 
@@ -87,7 +107,9 @@ public class AiController {
         ).toArray(ToolCallback[]::new);
 
         DdlwlrmaManus ddlwlrmaManus = new DdlwlrmaManus(allToolsWithMcp, openAiChatModel);
-        return ddlwlrmaManus.runStream(message);
+        SseEmitter emitter = new SseEmitter(300000L); // 5分钟超时
+
+        return ddlwlrmaManus.runStream(message, emitter);
     }
 
 
