@@ -3,7 +3,7 @@
     <div class="chat-header">
       <button class="back-btn" @click="goBack">← 返回</button>
       <div class="header-right">
-        <h2>🐢 海龟汤游戏</h2>
+        <h2>🕊️ GitHub助手</h2>
         <div class="chat-id">会话ID: {{ chatId }}</div>
       </div>
     </div>
@@ -11,7 +11,7 @@
     <div class="chat-messages" ref="messagesContainer">
       <div v-for="message in messages" :key="message.id" :class="['message', message.type]">
         <div class="message-avatar" v-if="message.type === 'ai'">
-          <div class="avatar ai-avatar">🐢</div>
+          <div class="avatar ai-avatar">🕊️</div>
         </div>
         <div class="message-avatar" v-if="message.type === 'user'">
           <div class="avatar user-avatar">👤</div>
@@ -24,7 +24,7 @@
       
       <div v-if="isLoading" class="message ai">
         <div class="message-bubble">
-          <div class="loading">海龟汤正在思考中...</div>
+          <div class="loading">GitHub助手正在思考中...</div>
         </div>
       </div>
     </div>
@@ -34,7 +34,7 @@
         <input 
           v-model="inputMessage" 
           @keypress.enter="sendMessage"
-          placeholder="请输入您的问题或猜测，海龟汤会给出提示..."
+          placeholder="请输入您的GitHub相关问题，助手会为您提供帮助..."
           :disabled="isLoading"
         />
         <button 
@@ -50,10 +50,10 @@
 </template>
 
 <script>
-import { startTurtleSoupSSE, generateChatId } from '../services/api'
+import { startGitHubHelperSSE, generateChatId } from '../services/api'
 
 export default {
-  name: 'TurtleSoupChat',
+  name: 'GitHubHelperChat',
   data() {
     return {
       messages: [],
@@ -79,7 +79,7 @@ export default {
       this.messages.push({
         id: Date.now(),
         type: 'ai',
-        content: '🐢 欢迎来到海龟汤游戏！\n\n我是您的小海龟朋友，我会给您一个谜题，您需要通过提问来猜出答案。\n\n• 我只能回答"是"、"否"或"无关"\n• 请用简洁的问题来获取线索\n• 发挥您的想象力，找出谜底！\n\n准备好了吗？让我们开始吧！',
+        content: '🕊️ 欢迎使用GitHub助手！\n\n我是您的GitHub专属助手，可以帮您解决各种GitHub相关的问题。\n\n• 代码审查和优化建议\n• Git操作指导\n• GitHub功能使用说明\n• 项目管理和协作建议\n• 问题排查和解决方案\n\n请告诉我您需要什么帮助，我会尽力为您提供专业的建议！',
         timestamp: new Date()
       })
     },
@@ -119,14 +119,14 @@ export default {
       
       // 等待一下再创建新连接，确保之前的连接完全关闭
       setTimeout(() => {
-        console.log('创建新的海龟汤SSE连接:', `/api/ai/turtle/chat/sse/emitter?message=${encodeURIComponent(messageToSend)}&chatId=${this.chatId}`)
+        console.log('创建新的GitHub助手SSE连接:', `/api/ai/github_helper/chat/sse/emitter?message=${encodeURIComponent(messageToSend)}&chatId=${this.chatId}`)
         
         // 重置状态
         this.currentAIMessage = ''
         this.isProcessingSSE = true
         
         // 创建新的SSE连接
-        this.sseConnection = startTurtleSoupSSE(
+        this.sseConnection = startGitHubHelperSSE(
           messageToSend,
           this.chatId,
           (data) => this.handleSSEMessage(data),
@@ -143,7 +143,7 @@ export default {
     },
     
     handleSSEOpen() {
-      console.log('海龟汤SSE连接已建立')
+      console.log('GitHub助手SSE连接已建立')
     },
     
     handleSSEClose() {
@@ -246,7 +246,7 @@ export default {
     },
     
     handleSSEError(error) {
-      console.error('海龟汤SSE连接错误:', error, 'currentAIMessage长度:', this.currentAIMessage.length)
+      console.error('GitHub助手SSE连接错误:', error, 'currentAIMessage长度:', this.currentAIMessage.length)
       
       // 如果已经不在加载状态，说明连接已经正常结束，不应该显示错误
       if (!this.isLoading) {
@@ -280,7 +280,7 @@ export default {
       this.isProcessingSSE = false
       
       // 添加详细错误消息
-      let errorMessage = '抱歉，无法连接到海龟汤服务。'
+      let errorMessage = '抱歉，无法连接到GitHub助手服务。'
       errorMessage += '\n\n可能的原因：\n• 后端服务未启动\n• 网络连接问题\n• 服务器暂时不可用\n\n请确保后端服务正常运行后重试。'
       
       this.messages.push({
@@ -358,7 +358,7 @@ export default {
 }
 
 .ai-avatar {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   color: white;
 }
 
@@ -423,7 +423,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   padding: 20px;
   color: white;
   font-size: 18px;
@@ -477,7 +477,7 @@ export default {
 }
 
 .loading {
-  background: linear-gradient(90deg, #4CAF50, #45a049, #4CAF50);
+  background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
   background-size: 200% 200%;
   animation: gradientShift 2s ease-in-out infinite;
   -webkit-background-clip: text;
@@ -594,4 +594,3 @@ export default {
   }
 }
 </style>
-

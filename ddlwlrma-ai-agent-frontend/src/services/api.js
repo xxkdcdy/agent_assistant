@@ -125,5 +125,11 @@ export function startTurtleSoupSSE(message, chatId, onMessage, onError, onOpen, 
   return new SSEConnection(url, onMessage, onError, onOpen, onClose, onComplete)
 }
 
+// GitHub助手聊天API - SSE接口
+export function startGitHubHelperSSE(message, chatId, onMessage, onError, onOpen, onClose, onComplete) {
+  const url = `${API_BASE_URL}/ai/github_helper/chat/sse/emitter?message=${encodeURIComponent(message)}&chatId=${encodeURIComponent(chatId)}`
+  return new SSEConnection(url, onMessage, onError, onOpen, onClose, onComplete)
+}
+
 export default api
 

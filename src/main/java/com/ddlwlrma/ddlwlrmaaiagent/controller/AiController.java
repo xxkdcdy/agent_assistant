@@ -2,6 +2,7 @@ package com.ddlwlrma.ddlwlrmaaiagent.controller;
 
 
 import com.ddlwlrma.ddlwlrmaaiagent.agent.DdlwlrmaManus;
+import com.ddlwlrma.ddlwlrmaaiagent.app.GitHubHelperApp;
 import com.ddlwlrma.ddlwlrmaaiagent.app.LoveApp;
 import com.ddlwlrma.ddlwlrmaaiagent.app.TurtleSoupApp;
 import com.ddlwlrma.ddlwlrmaaiagent.constant.AiConstant;
@@ -30,6 +31,8 @@ public class AiController {
 
     @Resource
     private TurtleSoupApp turtleSoupApp;
+    @Resource
+    private GitHubHelperApp gitHubHelperApp;
 
     @Resource
     private ToolCallback[] allTools;
@@ -162,5 +165,48 @@ public class AiController {
     @GetMapping("/turtle/chat/sync")
     public String doChatWithTurtleSoupAppSync(String message, String chatId) {
         return turtleSoupApp.doChat(message, chatId);
+    }
+
+    @GetMapping("/github_helper/chat/sse/emitter")
+    public SseEmitter doChatWithGithubHelperAppSseEmitter(String message, String chatId) {
+        SseEmitter emitter = new SseEmitter(180000L);
+
+        gitHubHelperApp.doChatByStream(message, chatId)
+                .subscribe(
+                        // onNext
+                        chunk -> {
+                            try {
+                                emitter.send(SseEmitter.event()
+                                        .name("message")
+                                        .data(chunk));
+                            } catch (IOException e) {
+                                emitter.completeWithError(e);
+                            }
+                        },
+                        // onError
+                        error -> {
+                            try {
+                                emitter.send(SseEmitter.event()
+                                        .name("error")
+                                        .data(error.getMessage()));
+                                emitter.send(SseEmitter.event()
+                                        .name("complete")
+                                        .data(AiConstant.END_CONVERSATION));
+                            } catch (IOException ignored) {}
+                            emitter.completeWithError(error);
+                        },
+                        // onComplete
+                        () -> {
+                            try {
+                                // 最后一条标记消息
+                                emitter.send(SseEmitter.event()
+                                        .name("complete")
+                                        .data(AiConstant.END_CONVERSATION));
+                            } catch (IOException ignored) {}
+                            emitter.complete();
+                        }
+                );
+
+        return emitter;
     }
 }

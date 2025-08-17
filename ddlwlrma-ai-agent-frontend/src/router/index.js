@@ -3,6 +3,7 @@ import Home from '../views/Home.vue'
 import LoveChat from '../views/LoveChat.vue'
 import ManusChat from '../views/ManusChat.vue'
 import TurtleSoupChat from '../views/TurtleSoupChat.vue'
+import GitHubHelperChat from '../views/GitHubHelperChat.vue'
 
 const routes = [
   {
@@ -24,6 +25,11 @@ const routes = [
     path: '/turtle-soup',
     name: 'TurtleSoupChat',
     component: TurtleSoupChat
+  },
+  {
+    path: '/github-helper',
+    name: 'GitHubHelperChat',
+    component: GitHubHelperChat
   }
 ]
 

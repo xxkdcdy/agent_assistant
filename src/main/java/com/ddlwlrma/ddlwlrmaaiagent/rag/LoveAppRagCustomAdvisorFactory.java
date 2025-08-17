@@ -12,13 +12,13 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 public class LoveAppRagCustomAdvisorFactory {
     public static Advisor createLoveAppRagCustomAdvisor(VectorStore vectorStore, String filterMetadata) {
         // 过滤特定元信息的文档
-        Filter.Expression expression = new FilterExpressionBuilder()
-                .eq("filename", filterMetadata)
-                .build();
+//        Filter.Expression expression = new FilterExpressionBuilder()
+//                .eq("filename", filterMetadata)
+//                .build();
 
         DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
                 .vectorStore(vectorStore)
-                .filterExpression(expression)
+//                .filterExpression(expression)
                 .similarityThreshold(0.5)
                 .topK(3)
                 .build();
