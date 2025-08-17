@@ -16,10 +16,11 @@
         <div class="message-avatar" v-if="message.type === 'user'">
           <div class="avatar user-avatar">👤</div>
         </div>
-        <div class="message-bubble">
-          <div class="message-content" v-html="formatMessage(message.content)"></div>
-          <div class="message-time">{{ formatTime(message.timestamp) }}</div>
-        </div>
+                 <div class="message-bubble">
+           <div class="message-content" v-if="message.type === 'ai'" v-html="formatMessage(message.content)"></div>
+           <div class="message-content" v-else>{{ message.content }}</div>
+           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+         </div>
       </div>
       
       <div v-if="isLoading" class="message ai">
@@ -51,6 +52,7 @@
 
 <script>
 import { startGitHubHelperSSE, generateChatId } from '../services/api'
+import { marked } from 'marked'
 
 export default {
   name: 'GitHubHelperChat',
@@ -297,7 +299,24 @@ export default {
     },
     
     formatMessage(content) {
-      return content.replace(/\n/g, '<br>')
+      // 只对AI消息进行Markdown解析，用户消息保持原样
+      return this.parseMarkdown(content)
+    },
+    
+    parseMarkdown(content) {
+      try {
+        // 配置marked选项
+        marked.setOptions({
+          breaks: true, // 支持换行
+          gfm: true,    // 支持GitHub风格Markdown
+          sanitize: false // 允许HTML标签
+        })
+        return marked(content)
+      } catch (error) {
+        console.error('Markdown解析错误:', error)
+        // 如果解析失败，回退到简单的换行处理
+        return content.replace(/\n/g, '<br>')
+      }
     },
     
     formatTime(timestamp) {
@@ -589,8 +608,179 @@ export default {
     gap: 10px;
   }
   
-  .chat-input input {
-    font-size: 16px; /* 防止iOS缩放 */
-  }
-}
-</style>
+     .chat-input input {
+     font-size: 16px; /* 防止iOS缩放 */
+   }
+ }
+
+ /* Markdown样式支持 - 仅针对AI消息气泡 */
+ .message.ai .message-content {
+   line-height: 1.6;
+   color: #333;
+ }
+
+ .message.ai .message-content h1,
+ .message.ai .message-content h2,
+ .message.ai .message-content h3,
+ .message.ai .message-content h4,
+ .message.ai .message-content h5,
+ .message.ai .message-content h6 {
+   margin: 20px 0 12px 0;
+   font-weight: 700;
+   color: #2c3e50;
+   border-bottom: 2px solid #FFD700;
+   padding-bottom: 8px;
+ }
+
+ .message.ai .message-content h1 { font-size: 1.8em; }
+ .message.ai .message-content h2 { font-size: 1.5em; }
+ .message.ai .message-content h3 { font-size: 1.3em; }
+
+ .message.ai .message-content p {
+   margin: 12px 0;
+   line-height: 1.7;
+ }
+
+ .message.ai .message-content ul,
+ .message.ai .message-content ol {
+   margin: 12px 0;
+   padding-left: 24px;
+ }
+
+ .message.ai .message-content li {
+   margin: 8px 0;
+   line-height: 1.6;
+ }
+
+ /* 项目推荐样式优化 */
+ .message.ai .message-content h3 + ul,
+ .message.ai .message-content h3 + ol {
+   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+   border: 1px solid #dee2e6;
+   border-radius: 8px;
+   padding: 16px 20px;
+   margin: 16px 0;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+ }
+
+ .message.ai .message-content h3 + ul li,
+ .message.ai .message-content h3 + ol li {
+   background: white;
+   padding: 8px 12px;
+   margin: 8px 0;
+   border-radius: 6px;
+   border-left: 3px solid #FFD700;
+   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+ }
+
+ .message.ai .message-content code {
+   background-color: #f1f3f4;
+   padding: 3px 8px;
+   border-radius: 4px;
+   font-family: 'Courier New', monospace;
+   font-size: 0.9em;
+   color: #d73a49;
+   border: 1px solid #e1e4e8;
+ }
+
+ .message.ai .message-content pre {
+   background-color: #f6f8fa;
+   padding: 16px;
+   border-radius: 8px;
+   overflow-x: auto;
+   margin: 16px 0;
+   border: 1px solid #e1e4e8;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+ }
+
+ .message.ai .message-content pre code {
+   background-color: transparent;
+   padding: 0;
+   color: #24292e;
+   border: none;
+ }
+
+ .message.ai .message-content blockquote {
+   border-left: 4px solid #FFD700;
+   margin: 16px 0;
+   padding: 12px 20px;
+   background-color: #f8f9fa;
+   border-radius: 0 6px 6px 0;
+   color: #6c757d;
+   font-style: italic;
+ }
+
+ .message.ai .message-content a {
+   color: #FFD700;
+   text-decoration: none;
+   font-weight: 500;
+   border-bottom: 1px solid transparent;
+   transition: all 0.3s ease;
+ }
+
+ .message.ai .message-content a:hover {
+   color: #FFA500;
+   border-bottom-color: #FFA500;
+   text-decoration: none;
+ }
+
+ .message.ai .message-content table {
+   border-collapse: collapse;
+   width: 100%;
+   margin: 16px 0;
+   border-radius: 8px;
+   overflow: hidden;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+ }
+
+ .message.ai .message-content th,
+ .message.ai .message-content td {
+   border: 1px solid #e1e4e8;
+   padding: 12px 16px;
+   text-align: left;
+ }
+
+ .message.ai .message-content th {
+   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+   color: white;
+   font-weight: 600;
+ }
+
+ .message.ai .message-content tr:nth-child(even) {
+   background-color: #f8f9fa;
+ }
+
+ .message.ai .message-content tr:hover {
+   background-color: #f1f3f4;
+ }
+
+ .message.ai .message-content strong {
+   font-weight: 700;
+   color: #2c3e50;
+   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+   -webkit-background-clip: text;
+   -webkit-text-fill-color: transparent;
+   background-clip: text;
+ }
+
+ .message.ai .message-content em {
+   font-style: italic;
+   color: #6c757d;
+ }
+
+ .message.ai .message-content hr {
+   border: none;
+   border-top: 2px solid #FFD700;
+   margin: 24px 0;
+   opacity: 0.3;
+ }
+
+ /* 特殊格式优化 */
+ .message.ai .message-content .highlight {
+   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+   color: white;
+   padding: 2px 6px;
+   border-radius: 4px;
+   font-weight: 500;
+ }
+ </style>
